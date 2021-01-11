@@ -2,19 +2,20 @@ import nest_asyncio
 import time
 nest_asyncio.apply()
 import discord
+import math
 
 prefix = '!'
 
-t = [time.time(),0]
+
 
 client = discord.Client()
 
 intents = discord.Intents.default()
 intents.members = True  # Subscribe to the privileged members intent.
 client = discord.Client(intents=intents)
-main_ch = client.guilds[0].get_channel(795956162695790624)
-# main_ch = client.guilds
-print("Chenel - ", main_ch)
+
+main_ch = 0
+# print("Chenel - ", main_ch)
 
 import sqlite3 as sq
 
@@ -94,8 +95,10 @@ async def try_pay(person, amount, message, idd):
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
+    global main_ch
+    main_ch = client.get_channel(795956162695790624)
     # await client.send_message(mainChannel, "Starting countdown", tts=True)
-    # await main_ch.send("Начало работы")
+    await main_ch.send("Начало работы")
     for m in client.get_all_members():
         chek_new(m)
         print(m)
@@ -270,17 +273,28 @@ async def on_message(message):
 async def on_member_join(member):
     # await main_ch.send('Привет ' + str(member.mention))
     chek_new(member)
-
+# t = [time.time(), 0]
+global tdict
+tdict = {}
 @client.event
 async def on_voice_state_update(member, before, after):
+
     if before.channel is None and after.channel is not None:
         print('1')
-        t[0] = time.time()
+        t1 = time.time()
+        tdict[member.id] = t1
     elif before.channel is not None and after.channel is None:
-        t[1] = time.time()
+        t2 = time.time()
         print('0')
-        print(t[1] - t[0])
-        # await main_ch.send(f"{member.mention} провел на канале {t2-t1} секунд.")
+        print(t2-tdict[member.id])
+        dt = math.floor(t2-tdict[member.id])
+        nag = math.floor(dt * 2.5)
+        await main_ch.send(f"{member.mention} провел на канале {dt} секунд. Награда - {nag} :drop_of_blood:")
+        sql.execute("SELECT bal FROM table_1 WHERE id = '{0}'".format(member.id))
+        money = sql.fetchone()
+        sql.execute(f"UPDATE table_1 SET bal = {money[0] + nag}  WHERE id = '{member.id}'")
+        db.commit()
+        # await message.channel.send(f"На <@!{id}> с неба упало {amount} :drop_of_blood:")
 
 
 #     if message.content.startswith('$money'):
