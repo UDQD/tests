@@ -4,6 +4,7 @@ import discord
 import math
 from random import randint as rnd
 from config import *
+from my_token import TOKEN
 
 nest_asyncio.apply()
 prefix = conf['PREFIX']
@@ -63,7 +64,7 @@ async def try_pay(person, amount, message, idd):
             sql.execute("SELECT bal FROM table_1 WHERE id = '{0}'".format(idd))
             money_2 = sql.fetchone()
             if money_2 is None:
-                await message.channel.send("Пользователь не найден")
+                await message.channel.send(texts['1'])
                 return False
             else:
                 sql.execute("SELECT bal FROM table_1 WHERE id = '{0}'".format(person.id))
@@ -82,14 +83,14 @@ async def try_pay(person, amount, message, idd):
                     # print("2 :",res2)
                     db.commit()
                     # sm = ":drop_of_blood:" * amount
-                    await message.channel.send(
-                        f"Перевод от {message.author.mention} к <@!{idd}> прошел  успешно. Переведено {amount} {conf['VAL']}.")
+                    send = f"<@!{idd}>"
+                    await message.channel.send(texts['2'].format(message.author.mention, send, amount, conf['VAL']))
                     return True
         else:
-            await message.channel.send("Некорректная сумма")
+            await message.channel.send(texts['3'])
             return False
     else:
-        await message.channel.send("Нельзя отправить деньги самому себе")
+        await message.channel.send(texts['4'])
 
 
 # async def try_get(id, amount, message):
@@ -112,7 +113,7 @@ async def on_ready():
     global main_ch
     main_ch = client.get_channel(chan['main'])
     # await client.send_message(mainChannel, "Starting countdown", tts=True)
-    await main_ch.send("Начало работы")
+    # await main_ch.send("Начало работы")
     for m in client.get_all_members():
         chek_new(m)
         print(m)
@@ -136,33 +137,34 @@ async def on_message(message):
     # elif message.content.startswith(prefix + 'саня'):
     #     await message.channel.send(':)')
 
-    elif message.content.startswith(prefix + 'members'):
-        if message.author.guild_permissions.administrator:
-            await message.channel.send('члены:')
+    # elif message.content.startswith(prefix + 'members'):
+    #     if message.author.guild_permissions.administrator:
+    #         await message.channel.send('члены:')
+    #
+    #         for m in client.get_all_members():
+    #             await message.channel.send(f'{m.name} - {m.id}')
+    #     await message.channel.send("Недостаточно прав для данной команды")
 
-            for m in client.get_all_members():
-                await message.channel.send(f'{m.name} - {m.id}')
-        await message.channel.send("Недостаточно прав для данной команды")
-
-    if message.content.startswith(prefix + 'role'):
+    if message.content.startswith(prefix + com['1']):
         for role in message.guild.roles:
-            await message.channel.send(f' роль - {role} - {role.id}')
+            # await message.channel.send(f' роль - {role} - {role.id}')
+            print(f' роль - {role} - {role.id}')
 
-    elif message.content.startswith(prefix + 'db'):
+    elif message.content.startswith(prefix + com['2']):
         if message.author.guild_permissions.administrator:
             for val in sql.execute("""SELECT * FROM table_1"""):
                 await message.channel.send(val)
         else:
-            await message.channel.send("Недостаточно прав для данной команды")
+            await message.channel.send(texts['5'])
 
-    elif message.content.startswith(prefix + 'fullbal'):
+    elif message.content.startswith(prefix + com['3']):
         if message.author.guild_permissions.administrator:
             for val in sql.execute("""SELECT * FROM table_1 ORDER BY bal DESC"""):
                 await message.channel.send(str(val[0]) + " - " + str(val[2]) + f"{conf['VAL']}")
         else:
-            await message.channel.send("Недостаточно прав для данной команды")
+            await message.channel.send(texts['5'])
 
-    elif message.content.startswith(prefix + 'pay'):
+    elif message.content.startswith(prefix + com['4']):
         list_content = message.content.split()
         id = ''.join(filter(str.isdigit, str(list_content[1])))
         amount = str(list_content[2])
@@ -172,10 +174,14 @@ async def on_message(message):
         await try_pay(message.author, amount, message, id)
         # await try_get(id, amount, message)
 
-    elif message.content.startswith(prefix + 'ch'):
-        print(message.channel.id)
+    # elif message.content.startswith(prefix + 'ch'):
+    #     print(message.channel.id)
 
-    elif message.content.startswith(prefix + 'whoami'):
+    elif message.content.startswith(prefix + com['5']):
+        for c in message.guild.channels:
+            print(f' Канал - {c} - {c.id}')
+
+    elif message.content.startswith(prefix + com['6']):
         if message.author.guild_permissions.administrator:
             await message.channel.send("ты Админ")
             s = str(f" ты - {message.author.guild_permissions}")
@@ -191,7 +197,7 @@ async def on_message(message):
     #     else:
     #         await message.channel.send("Недостаточно прав для данной команды")
 
-    elif message.content.startswith(prefix + 'setbal'):
+    elif message.content.startswith(prefix + com['7']):
         if message.author.guild_permissions.administrator:
             list_content = message.content.split()
             id = ''.join(filter(str.isdigit, str(list_content[1])))
@@ -202,19 +208,20 @@ async def on_message(message):
                 sql.execute("SELECT bal FROM table_1 WHERE id = '{0}'".format(id))
                 money = sql.fetchone()
                 if money is None:
-                    await message.channel.send("Пользователь не найден")
+                    await message.channel.send(texts['6'])
                 else:
                     sql.execute(f"UPDATE table_1 SET bal = {amount}  WHERE id = '{id}'")
                     db.commit()
-                    await message.channel.send(f"Балланс <@!{id}> установлен на {amount} {conf['VAL']}")
+                    send = f"<@!{id}>"
+                    await message.channel.send(texts['7'].format(send, amount, conf['VAL']))
 
             else:
-                await message.channel.send("Некорректная сумма")
+                await message.channel.send(texts['3'])
         else:
-            await message.channel.send("Недостаточно прав для данной команды")
+            await message.channel.send(texts['5'])
 
 
-    elif message.content.startswith(prefix + 'add'):
+    elif message.content.startswith(prefix + com['8']):
         if message.author.guild_permissions.administrator:
             list_content = message.content.split()
             id = ''.join(filter(str.isdigit, str(list_content[1])))
@@ -225,18 +232,19 @@ async def on_message(message):
                 sql.execute("SELECT bal FROM table_1 WHERE id = '{0}'".format(id))
                 money = sql.fetchone()
                 if money is None:
-                    await message.channel.send("Пользователь не найден")
+                    await message.channel.send(texts['6'])
                 else:
                     sql.execute(f"UPDATE table_1 SET bal = {money[0] + amount}  WHERE id = '{id}'")
                     db.commit()
-                    await message.channel.send(f"На <@!{id}> с неба упало {amount} {conf['VAL']}")
+                    send = f"<@!{id}>"
+                    await message.channel.send(texts['9'].format(send, amount, conf['VAL']))
 
             else:
-                await message.channel.send("Некорректная сумма")
+                await message.channel.send(texts['3'])
         else:
-            await message.channel.send("Недостаточно прав для данной команды")
+            await message.channel.send(texts['5'])
 
-    elif message.content.startswith(prefix + 'pick'):
+    elif message.content.startswith(prefix + com['9']):
         if message.author.guild_permissions.administrator:
             list_content = message.content.split()
             id = ''.join(filter(str.isdigit, str(list_content[1])))
@@ -247,44 +255,54 @@ async def on_message(message):
                 sql.execute("SELECT bal FROM table_1 WHERE id = '{0}'".format(id))
                 money = sql.fetchone()
                 if money is None:
-                    await message.channel.send("Пользователь не найден")
+                    await message.channel.send(texts['6'])
                 else:
                     s = money[0] - amount
                     if s < 0:
-                        await message.channel.send("Недостаточно денег")
+                        await message.channel.send(texts['9'])
                     else:
                         sql.execute(f"UPDATE table_1 SET bal = {money[0] - amount}  WHERE id = '{id}'")
                         db.commit()
-                        await message.channel.send(f"У <@!{id}> неожиданно пропало {amount} {conf['VAL']}")
+                        send = f"<@!{id}>"
+                        await message.channel.send(texts['10'].format(send, amount, conf['VAL']))
 
             else:
-                await message.channel.send("Некорректная сумма")
+                await message.channel.send(texts['3'])
         else:
-            await message.channel.send("Недостаточно прав для данной команды")
+            await message.channel.send(texts['5'])
 
-    elif message.content.startswith(prefix + 'vipe'):
-        if message.author.guild_permissions.administrator:
+    elif message.content.startswith(prefix + com['10']):
+        if message.author.id in conf['OP']:
             sql.execute(f"UPDATE table_1 SET bal = {conf['START_BAL']}")
             db.commit()
-            await message.channel.send("Возврат к исходному состоянию: успешно!")
+            await message.channel.send(texts['11'])
         else:
-            await message.channel.send("Недостаточно прав для данной команды")
+            await message.channel.send(texts['5'])
 
-    elif message.content.startswith(prefix + 'bal'):
+    elif message.content.startswith(prefix + com['15']):
         sql.execute(f"SELECT * FROM table_1 WHERE id = {message.author.id}")
         st = sql.fetchone()
-        await message.channel.send(f"{message.author.mention}, твой баланс: {st[2]} {conf['VAL']}")
+        await message.channel.send(texts['12'].format(message.author.mention, st[2], conf['VAL']))
 
-    elif message.content.startswith(prefix + 'voice'):
+    elif message.content.startswith(prefix + com['11']):
         voice_list = []
         for ch in message.guild.channels:
             # await message.channel.send(str(ch.name)+' - '+str(ch.id)+' - '+str(ch.type))
             # print(ch.type," --- ",'voice')
             if str(ch.type) == 'voice':
                 voice_list.append(ch.id)
-        await message.channel.send(voice_list)
+        print(voice_list)
 
-    elif message.content.startswith(prefix + 'buyrole'):
+    elif message.content.startswith(prefix + com['12']):
+        text_list = []
+        for ch in message.guild.channels:
+            # await message.channel.send(str(ch.name)+' - '+str(ch.id)+' - '+str(ch.type))
+            # print(ch.type," --- ",'voice')
+            if str(ch.type) == 'text':
+                text_list.append(ch.id)
+        print(text_list)
+
+    elif message.content.startswith(prefix + com['13']):
         m = message.content.split()
         print(m)
         role_name = int(m[1])
@@ -298,24 +316,25 @@ async def on_message(message):
                     # print(role)
                     # print(message.author.roles)
                     if st < roles['price'][str(i)]:
-                        await message.channel.send(f"Недостаточно денег для покупки роли '{role}'")
+                        await message.channel.send(texts['13'].format(role))
                     else:
                         sql.execute(
-                            f"UPDATE table_1 SET bal = {st - roles['price']['1']}  WHERE id = '{message.author.id}'")
+                            f"UPDATE table_1 SET bal = {st - roles['price'][str(i)]}  WHERE id = '{message.author.id}'")
                         db.commit()
                         # role = discord.utils.get(message.guild.roles, id=role_id['1'])
+                        send = f"<@!{message.author.id}>"
                         await message.author.add_roles(role)
                         await message.channel.send(
-                            f"<@!{message.author.id}> купил роль '{role}' за {roles['price'][str(i)]} {conf['VAL']}")
+                            texts['14'].format(message.author.mention, role, roles['price'][str(i)], conf['VAL']))
                 else:
-                    await message.channel.send("Роль уже куплена")
+                    await message.channel.send(texts['15'])
                 break
 
 
     elif message.content.startswith(prefix + 'react'):
         pass
 
-    elif message.content.startswith(prefix + 'code'):
+    elif message.content.startswith(prefix + com['14']):
         amount = rnd(conf['MIN_NAG'], conf['MAX_NAG'])
         start_game = False
         # global is_not_true
@@ -330,7 +349,7 @@ async def on_message(message):
             money = sql.fetchone()
             sql.execute(f"UPDATE table_1 SET bal = {money[0] + amount}  WHERE id = '{message.author.id}'")
             db.commit()
-            await message.channel.send(f"{message.author.mention} написал код первым, Награда: {amount} {conf['VAL']}")
+            await message.channel.send(texts['16'].format(message.author.mention, amount, conf['VAL']))
         else:
             pass
 
@@ -342,7 +361,7 @@ async def on_message(message):
         start_game = True
         # global game_code
         game_code = str(rnd(10000, 99999))
-        await main_ch.send(f"Код - {game_code}. напиши первым и получи бабки. команда {prefix}code *****")
+        await main_ch.send(texts['17'].format(game_code, prefix))
 
 
 # @client.command(pass_context=True)
@@ -362,7 +381,7 @@ tdict = {}
 
 @client.event
 async def on_voice_state_update(member, before, after):
-    mikro_off = False
+    # mikro_off = False
 
     if before.channel is None and after.channel is not None:
         if not (after.mute or after.self_mute):
@@ -371,7 +390,7 @@ async def on_voice_state_update(member, before, after):
             tdict[member.id] = t1
         else:
             print(member.name, 'Зашел с вЫключеным')
-            mikro_off = True
+            # mikro_off = True
 
 
 
@@ -417,44 +436,5 @@ async def on_voice_state_update(member, before, after):
         sql.execute(f"UPDATE table_1 SET bal = {money[0] + nag}  WHERE id = '{member.id}'")
         db.commit()
 
-    # # muted = False
-    # if ((before.channel is None and after.channel is not None) and not (after.mute or after.self_mute)) or not (after.mute or after.self_mute):
-    #     print('1')
-    #     t1 = time.time()
-    #     tdict[member.id] = t1
-    # elif (before.channel is not None and after.channel is None) or (after.mute or after.self_mute):
-    #     t2 = time.time()
-    #     print('0')
-    #     if member.id in tdict:
-    #         # tdict[member.id] = start_time
-    #     # if after.mute or after.self_mute:
-    #     #     tdict[member.id] = time.time()
-    #         print("dt = ", t2 - tdict[member.id])
-    #         dt = math.floor(t2 - tdict[member.id])# // 60
-    #         nag = math.floor(dt * conf['VOICE_NAG'])
-    #         await main_ch.send(f"{member.mention} провел на канале {dt} минут. Награда - {nag} {conf['VAL']}")
-    #         sql.execute("SELECT bal FROM table_1 WHERE id = '{0}'".format(member.id))
-    #         money = sql.fetchone()
-    #         sql.execute(f"UPDATE table_1 SET bal = {money[0] + nag}  WHERE id = '{member.id}'")
-    #         db.commit()
-    #
-    #     # await message.channel.send(f"На <@!{id}> с неба упало {amount} :drop_of_blood:")
-    # if after.mute or after.self_mute:
-    #     # print('mute')
-    #     await main_ch.send(f"{member.mention} в муте")
-    # else:
-    #     # print('unmute')
-    #     await main_ch.send(f"{member.mention} НЕ в муте")
 
-    # if (member.mute or member.self_mute) and not muted:
-    #     await main_ch.send(f"{member.mention} в муте")
-    #     muted = True
-    # elif not (member.mute or member.self_mute) and muted:
-    #     muted = False
-    #     await main_ch.send(f"{member.mention} НЕ в муте")
-
-
-#     if message.content.startswith('$money'):
-#         await message.channel.send('Баланс '+str(message.author)+' = '+)
-
-client.run(conf['TOKEN'])
+client.run(TOKEN)
